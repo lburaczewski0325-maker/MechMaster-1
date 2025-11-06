@@ -199,8 +199,10 @@
 
     <script data-ht-main-script>
     // --- API & Firebase Setup ---
-        const apiKey = ""; // API key will be provided automatically in the canvas environment
-        const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
+    // Read API key from a meta tag or global variable so the page can be hosted safely.
+    // Add a meta in the page: <meta name="mechmaster-api-key" content="YOUR_KEY"> or set window.__MECHMASTER_API_KEY = 'YOUR_KEY'
+    const apiKey = (document.querySelector('meta[name="mechmaster-api-key"]')?.content) || window.__MECHMASTER_API_KEY || "";
+    const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
 
     // --- Core Utilities ---
 
@@ -249,6 +251,28 @@
             if (!carYear || !carMake || !carModel || !partToFix) {
                 instructionsOutput.innerHTML = `<p class="text-red-500 font-semibold">Please fill in all vehicle and part details.</p>`;
                 sourcesOutput.classList.add('hidden');
+                return;
+            }
+
+            // If no API key is configured, show an actionable message and a local sample result.
+            if (!apiKey) {
+                const sample = `Tools Required:\n- Socket set\n- Jack stands\n- Torque wrench\n\nStep-by-step Procedure:\n1. Park on a level surface and engage parking brake.\n2. Loosen lug nuts, lift vehicle with jack, and secure with jack stands.\n3. Remove wheel and access brake caliper.\n4. Remove caliper bolts, slide off caliper, and replace pads.\n5. Reinstall caliper and wheel; lower vehicle and torque lug nuts to spec.`;
+                instructionsOutput.innerHTML = formatInstructions(sample);
+                sourcesOutput.classList.add('hidden');
+                // Show a friendly banner telling the user how to enable live searches
+                const banner = document.createElement('div');
+                banner.className = 'p-3 bg-yellow-50 border-l-4 border-yellow-400 rounded-r-lg mt-4';
+                banner.innerHTML = `<strong>Live searching disabled.</strong> No API key configured. To enable live repair searches add a meta tag: <code>&lt;meta name=\"mechmaster-api-key\" content=\"YOUR_KEY\"&gt;</code> or set <code>window.__MECHMASTER_API_KEY</code> before this script. Using a local sample response for now.`;
+                // Insert banner above the results
+                const resultsContainer = document.getElementById('results-container');
+                if (resultsContainer && !document.getElementById('mechmaster-api-banner')) {
+                    banner.id = 'mechmaster-api-banner';
+                    resultsContainer.prepend(banner);
+                }
+                // Reset UI state
+                loadingIndicator.classList.add('hidden');
+                generateButton.disabled = false;
+                generateButton.innerHTML = 'Get Repair Instructions';
                 return;
             }
 
